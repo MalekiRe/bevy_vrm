@@ -1,10 +1,9 @@
 //! Drag and drop [VRM](https://vrm.dev/) viewer using [bevy_vrm](https://github.com/unavi-xyz/bevy_vrm).
 
 use std::f32::consts::PI;
-use std::ops::{Mul, Sub};
 
 use bevy::prelude::*;
-use bevy::transform::TransformSystem;
+
 use bevy::transform::TransformSystem::TransformPropagate;
 use bevy_egui::EguiPlugin;
 use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
@@ -38,9 +37,11 @@ impl Plugin for VrmViewerPlugin {
                     move_avatar,
                 ),
             )
-            .add_systems(Update, (add_recursive_spring_bones, add_springbone_logic_state).chain())
-            .add_systems(PostUpdate, (do_springbone_logic).after(TransformPropagate))
-            ;
+            .add_systems(
+                Update,
+                (add_recursive_spring_bones, add_springbone_logic_state).chain(),
+            )
+            .add_systems(PostUpdate, (do_springbone_logic).after(TransformPropagate));
     }
 }
 
@@ -64,13 +65,12 @@ pub struct SpringBoneLogicState {
     initial_local_rotation: Quat,
 }
 
-fn add_recursive_spring_bones
-(
+fn add_recursive_spring_bones(
     mut spring_boness: Query<&mut SpringBones>,
     children: Query<&Children>,
 ) {
     for mut spring_bones in spring_boness.iter_mut() {
-        for mut spring_bone in spring_bones.0.iter_mut() {
+        for spring_bone in spring_bones.0.iter_mut() {
             let bones = spring_bone.bones.clone();
             for bone in bones {
                 for child in children.iter_descendants(bone) {
@@ -86,15 +86,15 @@ fn add_recursive_spring_bones
 fn add_springbone_logic_state(
     mut commands: Commands,
     spring_boness: Query<(Entity, &SpringBones)>,
-    mut logic_states: Query<&mut SpringBoneLogicState>,
+    logic_states: Query<&mut SpringBoneLogicState>,
     global_transforms: Query<&GlobalTransform>,
     local_transforms: Query<&Transform>,
     children: Query<&Children>,
     names: Query<&Name>,
 ) {
-    for (skel_e, spring_bones) in spring_boness.iter() {
+    for (_skel_e, spring_bones) in spring_boness.iter() {
         for spring_bone in spring_bones.0.iter() {
-            for (i, bone) in spring_bone.bones.iter().enumerate() {
+            for (_i, bone) in spring_bone.bones.iter().enumerate() {
                 /*if let Ok(name) = names.get(*bone) {
                     println!("{}", name);
                 }*/
@@ -109,18 +109,22 @@ fn add_springbone_logic_state(
                         Err(_) => {
                             if let Ok(name) = names.get(*bone) {
                                 if name.as_str() == "donotaddmore" {
-                                    continue
+                                    continue;
                                 }
                             }
-                            let child = commands.spawn((TransformBundle {
-                                local: Transform::from_xyz(0.0, -0.07, 0.0),
-                                global: Default::default(),
-                            }, Name::new("donotaddmore"))).id();
+                            let child = commands
+                                .spawn((
+                                    TransformBundle {
+                                        local: Transform::from_xyz(0.0, -0.07, 0.0),
+                                        global: Default::default(),
+                                    },
+                                    Name::new("donotaddmore"),
+                                ))
+                                .id();
 
-                            commands.entity(*bone)
-                                .add_child(child);
-                            continue
-                        },
+                            commands.entity(*bone).add_child(child);
+                            continue;
+                        }
                     };
                     let mut next_bone = None;
                     for c in child.iter() {
@@ -138,7 +142,7 @@ fn add_springbone_logic_state(
 
                     let local_this_bone = local_transforms.get(*bone).unwrap();
 
-                    let mut bone_axis = local_next_bone.clone().translation.normalize();
+                    let bone_axis = local_next_bone.translation.normalize();
 
                     let bone_length = local_next_bone.translation.length();
 
@@ -167,60 +171,77 @@ fn do_springbone_logic(
     time: Res<Time>,
     names: Query<&Name>,
 ) {
-
-
     for spring_bones in spring_boness.iter() {
         for spring_bone in spring_bones.0.iter() {
-            println!("");
+            println!();
             for bone in spring_bone.bones.iter() {
                 if let Ok(name) = names.get(*bone) {
                     println!("{}", name);
                 }
             }
-            println!("");
+            println!();
 
-            for (i, bone) in spring_bone.bones.iter().enumerate() {
+            for (_i, bone) in spring_bone.bones.iter().enumerate() {
                 let bone: Entity = *bone;
                 let (global, _) = global_transforms.get(bone).unwrap();
                 let mut spring_bone_logic_state = match spring_bone_logic_states.get_mut(bone) {
                     Ok(spring_bone_logic_state) => spring_bone_logic_state,
                     Err(_) => continue,
                 };
-                let world_position = global.clone();
+                let world_position = *global;
 
                 let parent_entity = parents.get(bone).unwrap().get();
 
-                let parent_world_rotation = global_transforms.get(parent_entity).unwrap().0.to_scale_rotation_translation().1;
+                let parent_world_rotation = global_transforms
+                    .get(parent_entity)
+                    .unwrap()
+                    .0
+                    .to_scale_rotation_translation()
+                    .1;
 
-                let inertia = (spring_bone_logic_state.current_tail - spring_bone_logic_state.prev_tail) * (1.0 - spring_bone.drag_force);
-                let stiffness = time.delta_seconds() * (parent_world_rotation * spring_bone_logic_state.bone_axis * spring_bone.stiffness);
-                let external = time.delta_seconds() * spring_bone.gravity_dir * spring_bone.gravity_power;
+                let inertia = (spring_bone_logic_state.current_tail
+                    - spring_bone_logic_state.prev_tail)
+                    * (1.0 - spring_bone.drag_force);
+                let stiffness = time.delta_seconds()
+                    * (parent_world_rotation
+                        * spring_bone_logic_state.bone_axis
+                        * spring_bone.stiffness);
+                let external =
+                    time.delta_seconds() * spring_bone.gravity_dir * spring_bone.gravity_power;
 
-                let mut next_tail = spring_bone_logic_state.current_tail + inertia + stiffness + external;
+                let mut next_tail =
+                    spring_bone_logic_state.current_tail + inertia + stiffness + external;
 
                 if let Ok(name) = names.get(bone) {
                     println!("{name}, {}", next_tail);
                 }
 
-                next_tail = world_position.translation() + (next_tail - world_position.translation()).normalize() * spring_bone_logic_state.bone_length;
-
+                next_tail = world_position.translation()
+                    + (next_tail - world_position.translation()).normalize()
+                        * spring_bone_logic_state.bone_length;
 
                 spring_bone_logic_state.prev_tail = spring_bone_logic_state.current_tail;
                 spring_bone_logic_state.current_tail = next_tail;
 
-                let parent_world_matrix = global_transforms.get(parent_entity).unwrap().0.compute_matrix();
+                let parent_world_matrix = global_transforms
+                    .get(parent_entity)
+                    .unwrap()
+                    .0
+                    .compute_matrix();
 
-                let parent_pos = global_transforms.get(parent_entity).unwrap().0.clone();
+                let parent_pos = *global_transforms.get(parent_entity).unwrap().0;
 
-                let to = ((parent_world_matrix * spring_bone_logic_state.initial_local_matrix).inverse().transform_point3(next_tail)).normalize();
-
+                let to = ((parent_world_matrix * spring_bone_logic_state.initial_local_matrix)
+                    .inverse()
+                    .transform_point3(next_tail))
+                .normalize();
 
                 let (mut global, mut local) = global_transforms.get_mut(bone).unwrap();
 
-                local.rotation = spring_bone_logic_state.initial_local_rotation * Quat::from_rotation_arc(spring_bone_logic_state.bone_axis, to);
+                local.rotation = spring_bone_logic_state.initial_local_rotation
+                    * Quat::from_rotation_arc(spring_bone_logic_state.bone_axis, to);
 
-                *global = parent_pos.mul_transform(local.clone());
-
+                *global = parent_pos.mul_transform(*local);
             }
         }
     }
@@ -238,7 +259,11 @@ const VRM_PATH: &str = "/bevy_vrm/assets/suzuha.vrm";
 const VRM_PATH_2: &str = "AliciaSolid_vrm-0.51.vrm";
 const VRM_PATH: &str = "suzuha.vrm";
 
-fn setup(mut commands: Commands, asset_server: Res<AssetServer>, mut config: ResMut<GizmoConfigStore>,) {
+fn setup(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    mut config: ResMut<GizmoConfigStore>,
+) {
     let (config, _) = config.config_mut::<DefaultGizmoConfigGroup>();
     config.depth_bias = -1.0;
     commands.spawn((

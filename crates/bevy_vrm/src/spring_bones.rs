@@ -42,7 +42,6 @@ pub fn set_spring_bones(
                 None => continue,
             };
 
-
             for bone_group in ext.bone_groups(graph) {
                 println!("reached here");
 

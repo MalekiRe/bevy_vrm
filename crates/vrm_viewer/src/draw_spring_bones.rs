@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use bevy::transform;
+
 use bevy_vrm::{HumanoidBones, SpringBones};
 
 use crate::Settings;
@@ -9,8 +9,8 @@ pub fn draw_bones(
     humanoid_bones: Query<&HumanoidBones>,
     transforms: Query<&GlobalTransform>,
     settings: Res<Settings>,
-    parents: Query<&Parent>,
-    children: Query<&Children>,
+    _parents: Query<&Parent>,
+    _children: Query<&Children>,
 ) {
     if !settings.draw_spring_bones {
         return;
