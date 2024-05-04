@@ -55,6 +55,7 @@ pub struct HumanoidBones(pub HashMap<BoneName, Entity>);
 #[derive(Component, Default)]
 pub struct SpringBones(pub Vec<SpringBone>);
 
+#[derive(Debug)]
 pub struct SpringBone {
     pub bones: Vec<Entity>,
     pub center: f32,

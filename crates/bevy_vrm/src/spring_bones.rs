@@ -42,7 +42,10 @@ pub fn set_spring_bones(
                 None => continue,
             };
 
+
             for bone_group in ext.bone_groups(graph) {
+                println!("reached here");
+
                 let bones = bone_group
                     .bones(graph)
                     .into_iter()
@@ -80,7 +83,7 @@ pub fn set_spring_bones(
                     weight.gravity_dir.z,
                 );
 
-                spring_bones.0.push(SpringBone {
+                let spring_bone = SpringBone {
                     bones,
                     center: weight.center.unwrap_or_default(),
                     drag_force: weight.drag_force.unwrap_or_default(),
@@ -88,7 +91,11 @@ pub fn set_spring_bones(
                     gravity_power: weight.gravity_power.unwrap_or_default(),
                     hit_radius: weight.hit_radius.unwrap_or_default(),
                     stiffness: weight.stiffiness.unwrap_or_default(),
-                });
+                };
+
+                println!("adding: {:#?}", spring_bone);
+
+                spring_bones.0.push(spring_bone);
             }
         }
     }
