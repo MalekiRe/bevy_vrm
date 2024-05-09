@@ -14,6 +14,9 @@ bevy = "0.13.0"
 bevy_egui.workspace = true
 bevy_panorbit_camera.workspace = true
 bevy_vrm.workspace = true
+bevy_transform_gizmo = "0.11.0"
+bevy_mod_picking = "0.18.2"
+bevy-inspector-egui = "0.23.4"
 
 [target.'cfg(target_family = "wasm")'.dependencies]
 bevy_blob_loader = "0.0.4"

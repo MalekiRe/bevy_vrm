@@ -7,8 +7,14 @@ use bevy::prelude::*;
 use bevy::transform::TransformSystem;
 use bevy::transform::TransformSystem::TransformPropagate;
 use bevy_egui::EguiPlugin;
+use bevy_inspector_egui::inspector_egui_impls::InspectorEguiImpl;
+use bevy_inspector_egui::quick::WorldInspectorPlugin;
+use bevy_mod_picking::DefaultPickingPlugins;
 use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
+use bevy_transform_gizmo::TransformGizmoPlugin;
 use bevy_vrm::{loader::Vrm, mtoon::MtoonSun, SpringBones, VrmBundle, VrmPlugin};
+use bevy_vrm::ik::{RenikLimb, RenIkPlugin};
+use bevy_vrm::retargeting::{VrmRetargetingInitialized, VrmRetargetingPlugin};
 
 mod draw_spring_bones;
 mod move_leg;
@@ -25,8 +31,9 @@ impl Plugin for VrmViewerPlugin {
 
         app.insert_resource(ClearColor(Color::rgb(0.1, 0.1, 0.1)))
             .init_resource::<Settings>()
-            .add_plugins((DefaultPlugins, EguiPlugin, PanOrbitCameraPlugin, VrmPlugin))
+            .add_plugins((DefaultPlugins, VrmRetargetingPlugin, EguiPlugin, bevy_inspector_egui::DefaultInspectorConfigPlugin,PanOrbitCameraPlugin, VrmPlugin,/* RenIkPlugin,*/ DefaultPickingPlugins, TransformGizmoPlugin::default()))
             .add_systems(Startup, setup)
+            .register_type::<RenikLimb>()
             .add_systems(
                 Update,
                 (
@@ -35,7 +42,8 @@ impl Plugin for VrmViewerPlugin {
                     move_leg::move_leg,
                     read_dropped_files,
                     ui::update_ui,
-                    move_avatar,
+                    toggle_camera_controls_system,
+                    //move_avatar,
                 ),
             )
             .add_systems(Update, (add_recursive_spring_bones, add_springbone_logic_state).chain())
@@ -95,15 +103,7 @@ fn add_springbone_logic_state(
     for (skel_e, spring_bones) in spring_boness.iter() {
         for spring_bone in spring_bones.0.iter() {
             for (i, bone) in spring_bone.bones.iter().enumerate() {
-                /*if let Ok(name) = names.get(*bone) {
-                    println!("{}", name);
-                }*/
                 if !logic_states.contains(*bone) {
-                    /*if let Ok(name) = names.get(*bone) {
-                        if name.as_str() != "donotaddmore" {
-                            println!("{}", name);
-                        }
-                    }*/
                     let child = match children.get(*bone) {
                         Ok(c) => c,
                         Err(_) => {
@@ -171,13 +171,6 @@ fn do_springbone_logic(
 
     for spring_bones in spring_boness.iter() {
         for spring_bone in spring_bones.0.iter() {
-            println!("");
-            for bone in spring_bone.bones.iter() {
-                if let Ok(name) = names.get(*bone) {
-                    println!("{}", name);
-                }
-            }
-            println!("");
 
             for (i, bone) in spring_bone.bones.iter().enumerate() {
                 let bone: Entity = *bone;
@@ -234,18 +227,30 @@ const VRM_PATH: &str = "/bevy_vrm/assets/suzuha.vrm";
 const VRM_PATH_2: &str = "AliciaSolid_vrm-0.51.vrm";
 const VRM_PATH: &str = "suzuha.vrm";
 
+fn toggle_camera_controls_system(
+    key_input: Res<ButtonInput<KeyCode>>,
+    mut pan_orbit_query: Query<&mut PanOrbitCamera>,
+) {
+    if key_input.just_pressed(KeyCode::KeyT) {
+        for mut pan_orbit in pan_orbit_query.iter_mut() {
+            pan_orbit.enabled = !pan_orbit.enabled;
+        }
+    }
+}
+
 fn setup(mut commands: Commands, asset_server: Res<AssetServer>, mut config: ResMut<GizmoConfigStore>,) {
     let (config, _) = config.config_mut::<DefaultGizmoConfigGroup>();
     config.depth_bias = -1.0;
     commands.spawn((
         Camera3dBundle {
-            transform: Transform::from_xyz(1.0, 2.0, 5.0),
+            transform: Transform::from_xyz(2.0, 1.0, 3.0),
             ..default()
         },
         PanOrbitCamera {
             focus: Vec3::new(0.0, 0.8, 0.0),
             ..default()
         },
+        bevy_transform_gizmo::GizmoPickSource::default(),
     ));
 
     commands.spawn((
@@ -262,20 +267,8 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>, mut config: Res
     ));
 
     let mut transform = Transform::default();
-    transform.rotate_y(PI);
+    //transform.rotate_y(PI);
 
-    transform.translation.x -= 1.0;
-
-    commands.spawn(VrmBundle {
-        scene_bundle: SceneBundle {
-            transform,
-            ..default()
-        },
-        vrm: asset_server.load(VRM_PATH),
-        ..default()
-    });
-
-    transform.translation.x -= 1.0;
 
     commands.spawn(VrmBundle {
         scene_bundle: SceneBundle {

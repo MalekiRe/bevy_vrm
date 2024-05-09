@@ -19,6 +19,10 @@ gltf_kun_vrm.workspace = true
 serde.workspace = true
 serde_vrm.workspace = true
 thiserror.workspace = true
+bevy_transform_gizmo = "0.11.0"
+bevy_mod_picking = "0.18.2"
+bevy-inspector-egui = "0.24.0"
+random-number = "0.1.8"
 
 [dev-dependencies]
 bevy = "0.13.0"

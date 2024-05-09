@@ -43,7 +43,6 @@ pub fn set_spring_bones(
             };
 
             for bone_group in ext.bone_groups(graph) {
-                println!("reached here");
 
                 let bones = bone_group
                     .bones(graph)
@@ -91,8 +90,6 @@ pub fn set_spring_bones(
                     hit_radius: weight.hit_radius.unwrap_or_default(),
                     stiffness: weight.stiffiness.unwrap_or_default(),
                 };
-
-                println!("adding: {:#?}", spring_bone);
 
                 spring_bones.0.push(spring_bone);
             }
