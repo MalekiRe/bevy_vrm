@@ -31,7 +31,7 @@ impl Plugin for VrmViewerPlugin {
 
         app.insert_resource(ClearColor(Color::rgb(0.1, 0.1, 0.1)))
             .init_resource::<Settings>()
-            .add_plugins((DefaultPlugins, VrmRetargetingPlugin, EguiPlugin, bevy_inspector_egui::DefaultInspectorConfigPlugin,PanOrbitCameraPlugin, VrmPlugin,/* RenIkPlugin,*/ DefaultPickingPlugins, TransformGizmoPlugin::default()))
+            .add_plugins((DefaultPlugins, VrmRetargetingPlugin, EguiPlugin, bevy_inspector_egui::DefaultInspectorConfigPlugin,PanOrbitCameraPlugin, VrmPlugin,/* RenIkPlugin, */DefaultPickingPlugins, TransformGizmoPlugin::default()))
             .add_systems(Startup, setup)
             .register_type::<RenikLimb>()
             .add_systems(

@@ -202,6 +202,68 @@ pub enum BoneName {
     UpperChest,
 }
 
+impl BoneName {
+    pub fn parent(&self) -> Option<Self> {
+        Some(match self {
+            BoneName::Hips => return None,
+            BoneName::LeftUpperLeg => BoneName::Hips,
+            BoneName::RightUpperLeg => BoneName::Hips,
+            BoneName::LeftLowerLeg => BoneName::LeftUpperLeg,
+            BoneName::RightLowerLeg => BoneName::RightUpperLeg,
+            BoneName::LeftFoot => BoneName::LeftLowerLeg,
+            BoneName::RightFoot => BoneName::RightLowerLeg,
+            BoneName::Spine => BoneName::Hips,
+            BoneName::Chest => BoneName::UpperChest,
+            BoneName::Neck => BoneName::UpperChest,
+            BoneName::Head => BoneName::Neck,
+            BoneName::LeftShoulder => BoneName::UpperChest,
+            BoneName::RightShoulder => BoneName::UpperChest,
+            BoneName::LeftUpperArm => BoneName::LeftShoulder,
+            BoneName::RightUpperArm => BoneName::RightShoulder,
+            BoneName::LeftLowerArm => BoneName::LeftUpperArm,
+            BoneName::RightLowerArm => BoneName::RightUpperArm,
+            BoneName::LeftHand => BoneName::LeftLowerArm,
+            BoneName::RightHand => BoneName::RightLowerArm,
+            BoneName::LeftToes => BoneName::LeftFoot,
+            BoneName::RightToes => BoneName::RightFoot,
+            BoneName::LeftEye => BoneName::Head,
+            BoneName::RightEye => BoneName::Head,
+            BoneName::Jaw => BoneName::Head,
+            BoneName::LeftThumbProximal => BoneName::LeftHand,
+            BoneName::LeftThumbIntermediate => BoneName::LeftThumbProximal,
+            BoneName::LeftThumbDistal => BoneName::LeftThumbIntermediate,
+            BoneName::LeftIndexProximal => BoneName::LeftHand,
+            BoneName::LeftIndexIntermediate => BoneName::LeftIndexProximal,
+            BoneName::LeftIndexDistal => BoneName::LeftIndexDistal,
+            BoneName::LeftMiddleProximal => BoneName::LeftHand,
+            BoneName::LeftMiddleIntermediate => BoneName::LeftMiddleProximal,
+            BoneName::LeftMiddleDistal => BoneName::LeftMiddleIntermediate,
+            BoneName::LeftRingProximal => BoneName::LeftHand,
+            BoneName::LeftRingIntermediate => BoneName::LeftRingProximal,
+            BoneName::LeftRingDistal => BoneName::LeftRingIntermediate,
+            BoneName::LeftLittleProximal => BoneName::LeftHand,
+            BoneName::LeftLittleIntermediate => BoneName::LeftLittleProximal,
+            BoneName::LeftLittleDistal => BoneName::LeftLittleIntermediate,
+            BoneName::RightThumbProximal => BoneName::RightHand,
+            BoneName::RightThumbIntermediate => BoneName::RightThumbProximal,
+            BoneName::RightThumbDistal => BoneName::RightThumbIntermediate,
+            BoneName::RightIndexProximal => BoneName::RightHand,
+            BoneName::RightIndexIntermediate => BoneName::RightIndexProximal,
+            BoneName::RightIndexDistal => BoneName::RightIndexIntermediate,
+            BoneName::RightMiddleProximal => BoneName::RightHand,
+            BoneName::RightMiddleIntermediate => BoneName::RightMiddleProximal,
+            BoneName::RightMiddleDistal => BoneName::RightMiddleIntermediate,
+            BoneName::RightRingProximal => BoneName::RightHand,
+            BoneName::RightRingIntermediate => BoneName::RightRingProximal,
+            BoneName::RightRingDistal => BoneName::RightRingIntermediate,
+            BoneName::RightLittleProximal => BoneName::RightHand,
+            BoneName::RightLittleIntermediate => BoneName::RightLittleProximal,
+            BoneName::RightLittleDistal => BoneName::RightLittleDistal,
+            BoneName::UpperChest => BoneName::Spine,
+        })
+    }
+}
+
 #[derive(Clone, Debug, Default, Deserialize, PartialEq, Serialize)]
 pub struct FirstPerson {
     #[serde(rename = "firstPersonBone")]

@@ -10,6 +10,7 @@ use serde_vrm::vrm0::BoneName;
 use crate::HumanoidBones;
 use bevy_inspector_egui::prelude::ReflectInspectorOptions;
 use random_number::random;
+use crate::retargeting::VrmRetargetingInitialized;
 
 pub struct RenIkPlugin;
 
@@ -350,7 +351,7 @@ fn left_shoulder_pole_offset() -> Quat {
 
 const ARM_SHOULDER_INFLUENCE: f32 = 0.25;
 
-fn perform_hand_left_ik(mut local: Local<i32>, skeletons: Query<(&HumanoidBones, &Target, &GlobalTransform, &RenikLimb)>, parents: Query<&Parent>, bone_rests: Query<&BoneRest>, global_transforms: Query<&GlobalTransform>,
+fn perform_hand_left_ik(mut local: Local<i32>, skeletons: Query<(&HumanoidBones, &Target, &GlobalTransform, &RenikLimb), With<VrmRetargetingInitialized>>, parents: Query<&Parent>, bone_rests: Query<&BoneRest>, global_transforms: Query<&GlobalTransform>,
 mut local_transforms: Query<&mut Transform>) {
 
     for (skeleton, target, root_global_transform, renik_limb) in skeletons.iter() {
@@ -437,7 +438,7 @@ pub struct RenikLimb {
 
 impl Default for RenikLimb {
     fn default() -> Self {
-       /* RenikLimb {
+       RenikLimb {
             upper_twist_offset: -0.27777 * PI,
             lower_twist_offset: -0.27777 * PI,
             roll_offset: (-70.0_f32).to_radians(),
@@ -453,48 +454,10 @@ impl Default for RenikLimb {
                 60.0_f32.to_radians()
             ),
             shoulder_pole_offset:/* Quat::from_euler(XYZ, 0.0, 0.0, 78f32.to_radians())*/ Quat::IDENTITY,
-            a: Default::default(),
-            b: Default::default(),
+            a: Vec3::new(0.0, 1.0, 0.0),
+            b: Vec3::new(1.0, 0.0, 0.0),
             target_position_influence: Vec3::new(2.0, -1.5, -1.0),
-            c: Default::default(),
-            left_shoulder_offset: Quat::IDENTITY,
-        }*/
-        RenikLimb {
-            upper_twist_offset: -0.27777 * PI,
-            lower_twist_offset: -0.27777 * PI,
-            roll_offset: (-70.0_f32).to_radians(),
-            upper_limb_twist: 0.5,
-            lower_limb_twist: 0.66666,
-            twist_inflection_point_offset: 20.0_f32.to_radians(),
-            twist_overflow: 45.0_f32.to_radians(),
-            target_rotation_influence: 0.33,
-            pole_offset: Quat::from_xyzw(
-                0.9121687,
-                0.20174262,
-                0.20908107,
-                -0.2890214,
-            ),
-            target_position_influence: Vec3::new(
-                2.0,
-                -1.5,
-                -1.0,
-            ),
-            shoulder_pole_offset: Quat::IDENTITY,
-            a: Vec3::new(
-                0.0,
-                0.0,
-                1.0,
-            ),
-            b: Vec3::new(
-                0.0,
-                0.0,
-                -1.0,
-            ),
-            c: Vec3::new(
-                1.0,
-                0.0,
-                0.0,
-            ),
+            c: Vec3::new(0.0, 1.0, 0.0),
             left_shoulder_offset: Quat::IDENTITY,
         }
 
