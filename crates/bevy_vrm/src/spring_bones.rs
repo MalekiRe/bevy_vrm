@@ -43,7 +43,6 @@ pub fn set_spring_bones(
             };
 
             for bone_group in ext.bone_groups(graph) {
-
                 let bones = bone_group
                     .bones(graph)
                     .into_iter()

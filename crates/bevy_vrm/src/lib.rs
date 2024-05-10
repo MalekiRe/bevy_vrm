@@ -9,10 +9,10 @@ use loader::{Vrm, VrmLoader};
 mod auto_scene;
 pub mod extensions;
 mod humanoid_bones;
-pub mod loader;
-mod spring_bones;
 pub mod ik;
+pub mod loader;
 pub mod retargeting;
+mod spring_bones;
 
 pub mod mtoon {
     pub use bevy_shader_mtoon::*;

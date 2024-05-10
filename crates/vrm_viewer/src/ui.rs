@@ -1,17 +1,15 @@
 use bevy::prelude::*;
 use bevy::window::PrimaryWindow;
-use bevy_egui::{EguiContext, EguiContexts};
 use bevy_egui::egui::{CollapsingHeader, ScrollArea};
-
-use crate::Settings;
+use bevy_egui::EguiContext;
 
 pub fn update_ui(world: &mut World) {
     let Ok(egui_context) = world
         .query_filtered::<&mut EguiContext, With<PrimaryWindow>>()
         .get_single(world)
-        else {
-            return;
-        };
+    else {
+        return;
+    };
     let mut egui_context = egui_context.clone();
 
     bevy_egui::egui::Window::new("UI").show(egui_context.get_mut(), |ui| {
@@ -27,7 +25,6 @@ pub fn update_ui(world: &mut World) {
             bevy_inspector_egui::bevy_inspector::ui_for_world_entities(world, ui);
         });
     });
-
 }
 /*
 pub fn update_ui(mut contexts: EguiContexts, mut settings: ResMut<Settings>) {
