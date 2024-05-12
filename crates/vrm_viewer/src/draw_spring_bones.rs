@@ -30,6 +30,7 @@ pub fn draw_spring_bones(
     transforms: Query<&GlobalTransform>,
     settings: Res<Settings>,
 ) {
+    return;
     if !settings.draw_spring_bones {
         return;
     }
