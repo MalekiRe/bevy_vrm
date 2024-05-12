@@ -1,12 +1,11 @@
 use crate::humanoid_bones::HumanoidBonesInitialized;
-use crate::loader::Vrm;
+
 use crate::HumanoidBones;
 use bevy::math::Affine3A;
-use bevy::math::EulerRot::XYZ;
+
 use bevy::prelude::*;
 use bevy::render::mesh::skinning::{SkinnedMesh, SkinnedMeshInverseBindposes};
-use bevy::scene::SceneInstance;
-use bevy::transform;
+
 use bevy::utils::HashMap;
 use bevy_gltf_kun::import::gltf::node::GltfNode;
 use serde_vrm::vrm0::BoneName;
@@ -43,7 +42,7 @@ pub fn rotate_scene(
 
 pub fn retarget_vrm(
     mut local: Local<bool>,
-    mut commands: Commands,
+    _commands: Commands,
     mut vrm: Query<
         (Entity, &HumanoidBones),
         (
@@ -54,12 +53,12 @@ pub fn retarget_vrm(
     skinned_meshes: Query<&SkinnedMesh>,
     mut skinned_mesh_inverse_bindposes: ResMut<Assets<SkinnedMeshInverseBindposes>>,
     children: Query<&Children>,
-    parents: Query<&Parent>,
+    _parents: Query<&Parent>,
     mut local_transforms: Query<&mut Transform>,
-    global_transforms: Query<&GlobalTransform>,
+    _global_transforms: Query<&GlobalTransform>,
 ) {
-    for (entity, humanoid_bones) in vrm.iter_mut() {
-        if *local == true {
+    for (_entity, humanoid_bones) in vrm.iter_mut() {
+        if *local {
             return;
         }
         *local = true;
@@ -112,23 +111,23 @@ fn retarget_entity(
     new_rot: Quat,
     entity: Entity,
     skinned_meshes: &Query<&SkinnedMesh>,
-    mut skinned_mesh_inverse_bindposes: &mut Assets<SkinnedMeshInverseBindposes>,
+    skinned_mesh_inverse_bindposes: &mut Assets<SkinnedMeshInverseBindposes>,
     children: &Query<&Children>,
-    mut local_transforms: &mut Query<&mut Transform>,
+    local_transforms: &mut Query<&mut Transform>,
 ) {
     // setup
     let mut this_transform = local_transforms.get_mut(entity).unwrap();
     let old_rot = this_transform.rotation;
     let old_bind =
-        get_skinned_mesh(entity, &skinned_meshes, &mut skinned_mesh_inverse_bindposes).unwrap();
+        get_skinned_mesh(entity, skinned_meshes, skinned_mesh_inverse_bindposes).unwrap();
     // this should be the rotation that maps the old rotation to the new rotation
     let comp_rot = (old_rot.inverse() * new_rot).normalize();
     // set the bindpose
     set_skinned_mesh(
         entity,
         old_bind.rotation * comp_rot,
-        &skinned_meshes,
-        &mut skinned_mesh_inverse_bindposes,
+        skinned_meshes,
+        skinned_mesh_inverse_bindposes,
     );
     // set the rotation of the arm
     // this needs to be set to the new rot in local space
@@ -136,7 +135,7 @@ fn retarget_entity(
     // correct the positions of all of the child entities
     for child in children.iter_descendants(entity) {
         let that_bind =
-            get_skinned_mesh(child, &skinned_meshes, &mut skinned_mesh_inverse_bindposes).unwrap();
+            get_skinned_mesh(child, skinned_meshes, skinned_mesh_inverse_bindposes).unwrap();
         set_skinned_mesh(
             child,
             (that_bind.rotation * comp_rot).normalize(),
@@ -161,8 +160,8 @@ fn get_skinned_mesh(
             .unwrap();
         for (i, joint) in joints.iter().enumerate() {
             if *joint == entity {
-                let mut temp = inverse_bind_pose.to_vec();
-                let t = temp.get(i).unwrap().clone();
+                let temp = inverse_bind_pose.to_vec();
+                let t = *temp.get(i).unwrap();
                 return Some(Transform::from_matrix(t.inverse()));
             }
         }
@@ -184,7 +183,7 @@ fn set_skinned_mesh(
         for (i, joint) in joints.iter().enumerate() {
             if *joint == entity {
                 let mut temp = inverse_bind_pose.to_vec();
-                let t = temp.get(i).unwrap().clone();
+                let t = *temp.get(i).unwrap();
                 // we inverse T because it's the inverse bindpose, we inverse delta worldspace because it's
                 // what we gotta offset it by?
                 let mut temp2 = Transform::from_matrix(t.inverse());
@@ -206,20 +205,20 @@ fn skeleton_rotate(
     old_skeleton_global_rest: &mut SkeletonProfileHumanoidGlobal,
     old_skeleton_local_rest: &mut SkeletonProfileHumanoid,
 ) {
-    let mut prof_skeleton = SkeletonProfileHumanoidGlobal::default();
+    let prof_skeleton = SkeletonProfileHumanoidGlobal::default();
 
     let mut diffs = HashMap::new();
 
     for (bone_name, entity) in humanoid_bones.0.iter() {
-        let transform = local_transforms.get(*entity).unwrap().clone();
-        let global_transform = global_transforms.get(*entity).unwrap().clone();
+        let transform = *local_transforms.get(*entity).unwrap();
+        let global_transform = *global_transforms.get(*entity).unwrap();
         old_skeleton_local_rest
             .0
             .insert(bone_name.clone(), transform);
         old_skeleton_global_rest
             .0
             .insert(bone_name.clone(), global_transform.compute_transform());
-        diffs.insert(entity.clone(), Quat::IDENTITY);
+        diffs.insert(*entity, Quat::IDENTITY);
     }
 
     // We need to process all the parentless bones,
@@ -247,7 +246,7 @@ fn skeleton_rotate(
         };
 
         let tgt_rot = if let Some(matching_bone_name) = humanoid_bones.0.iter().find_map(|map| {
-            if map.1.clone() == bone {
+            if *map.1 == bone {
                 Some(map.0.clone())
             } else {
                 None
@@ -259,9 +258,9 @@ fn skeleton_rotate(
         };
 
         if let Ok(parent_bone) = parents.get(bone) {
-            (tgt_rot.inverse()
-                * diffs.get(&parent_bone.get()).unwrap().clone()
-                * local_transforms.get(bone).unwrap().rotation)
+            tgt_rot.inverse()
+                * *diffs.get(&parent_bone.get()).unwrap()
+                * local_transforms.get(bone).unwrap().rotation
         } else {
             tgt_rot.inverse() * local_transforms.get(bone).unwrap().rotation
         };
@@ -274,18 +273,15 @@ pub struct SkeletonProfileHumanoidGlobal(pub HashMap<BoneName, Transform>);
 
 impl Default for SkeletonProfileHumanoidGlobal {
     fn default() -> Self {
-        let mut skeleton_profile_humanoid = SkeletonProfileHumanoid::default();
+        let skeleton_profile_humanoid = SkeletonProfileHumanoid::default();
 
         let mut global = HashMap::new();
 
-        for (bone, transform) in skeleton_profile_humanoid.0.iter() {
-            let mut current_bone = bone.clone();
+        for (bone, _transform) in skeleton_profile_humanoid.0.iter() {
+            let current_bone = bone.clone();
             let mut transforms = vec![];
             while let Some(next_bone) = current_bone.parent() {
-                transforms.insert(
-                    0,
-                    skeleton_profile_humanoid.0.get(&next_bone).unwrap().clone(),
-                );
+                transforms.insert(0, *skeleton_profile_humanoid.0.get(&next_bone).unwrap());
             }
 
             let mut current_transform = Transform::default();
