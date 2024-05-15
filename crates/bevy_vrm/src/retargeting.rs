@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use crate::humanoid_bones::HumanoidBonesInitialized;
 use crate::loader::Vrm;
 use crate::HumanoidBones;
@@ -7,42 +8,30 @@ use bevy::prelude::*;
 use bevy::render::mesh::skinning::{SkinnedMesh, SkinnedMeshInverseBindposes};
 use bevy::scene::SceneInstance;
 use bevy::transform;
-use bevy::utils::HashMap;
+use bevy::utils::{HashMap};
 use bevy_gltf_kun::import::gltf::node::GltfNode;
 use serde_vrm::vrm0::BoneName;
 use std::f32::consts::PI;
 use std::ops::{Deref, DerefMut};
+use bevy::render::mesh::VertexAttributeValues;
 
 pub struct VrmRetargetingPlugin;
 
 impl Plugin for VrmRetargetingPlugin {
     fn build(&self, app: &mut App) {
-        //app.add_systems(Update, rotate_scene);
-        app.add_systems(Update, retarget_vrm);
+        app.add_systems(Update, (retarget_vrm, flip_global_transforms, bevy::transform::systems::propagate_transforms, bevy::transform::systems::sync_simple_transforms, flip_meshes, bevy::transform::systems::propagate_transforms, bevy::transform::systems::sync_simple_transforms).chain());
+        app.add_event::<RunBoneRestEvent>();
+        app.add_event::<ReadyForNext>();
     }
 }
 
 #[derive(Component)]
 pub struct VrmRetargetingInitialized;
 
-#[derive(Component)]
-struct Flipped;
-pub fn rotate_scene(
-    mut commands: Commands,
-    mut nodes: Query<(Entity, &mut Transform), (With<Handle<GltfNode>>, Without<Flipped>)>,
-) {
-    let transform_180 = Transform::from_rotation(Quat::from_rotation_x(PI));
-    for (e, mut node) in nodes.iter_mut() {
-        commands.entity(e).insert(Flipped);
-        let rest = transform_180 * *node * transform_180;
-        node.rotation = transform_180.rotation * rest.rotation * transform_180.rotation;
-        node.translation = rest.translation;
-        *node = transform_180 * *node * transform_180;
-    }
-}
+#[derive(Event)]
+pub struct RunBoneRestEvent;
 
 pub fn retarget_vrm(
-    mut local: Local<bool>,
     mut commands: Commands,
     mut vrm: Query<
         (Entity, &HumanoidBones),
@@ -54,24 +43,28 @@ pub fn retarget_vrm(
     skinned_meshes: Query<&SkinnedMesh>,
     mut skinned_mesh_inverse_bindposes: ResMut<Assets<SkinnedMeshInverseBindposes>>,
     children: Query<&Children>,
-    parents: Query<&Parent>,
     mut local_transforms: Query<&mut Transform>,
-    global_transforms: Query<&GlobalTransform>,
+    mut event_writer: EventWriter<RunBoneRestEvent>,
+    mut event_reader: EventReader<ReadyForNext>,
 ) {
-    for (entity, humanoid_bones) in vrm.iter_mut() {
-        if *local == true {
-            return;
+    if event_reader.is_empty() {
+        return;
+    } else {
+        for _ in event_reader.read() {
+
         }
-        *local = true;
+    }
+    println!("awa");
+    for (entity, humanoid_bones) in vrm.iter_mut() {
         let left_shoulder = *humanoid_bones.0.get(&BoneName::LeftShoulder).unwrap();
         let left_upper_arm = *humanoid_bones.0.get(&BoneName::LeftUpperArm).unwrap();
         let left_lower_arm = *humanoid_bones.0.get(&BoneName::LeftLowerArm).unwrap();
         let left_hand = *humanoid_bones.0.get(&BoneName::LeftHand).unwrap();
 
-        let shoulder_transform = Transform::from_rotation(Quat::from_xyzw(0.5, -0.5, -0.5, -0.5));
+        let shoulder_transform = Transform::from_rotation(Quat::from_xyzw(0.5, 0.5, 0.5, -0.5));
         let upper_arm_transform = Transform::from_rotation(Quat::from_xyzw(0.0, 1.0, 0.0, 0.0));
-        let lower_arm_transform = Transform::from_rotation(Quat::from_xyzw(0.0, 0.707, 0.0, 0.707));
-        let hand_transform = Transform::from_rotation(Quat::from_xyzw(0.0, -0.708, 0.0, 0.707));
+        let lower_arm_transform = Transform::from_rotation(Quat::from_xyzw(0.0, -0.708, 0.0, 0.707));
+        let hand_transform = Transform::from_rotation(Quat::from_xyzw(0.0, 0.708, 0.0, 0.707));
         retarget_entity(
             shoulder_transform.rotation,
             left_shoulder,
@@ -104,8 +97,126 @@ pub fn retarget_vrm(
             &children,
             &mut local_transforms,
         );
+
+        commands.entity(entity).insert(VrmRetargetingInitialized);
+        event_writer.send(RunBoneRestEvent);
     }
 }
+
+
+#[derive(Event)]
+pub struct ReadyForNext;
+
+fn flip_global_transforms(
+    mut query: Query<&mut Transform>,
+    children: Query<&Children>,
+    humanoid_bones: Query<&HumanoidBones>,
+    mut local: Local<i32>,
+    mut event_writer: EventWriter<ReadyForNext>,
+    skinned_meshes: Query<&SkinnedMesh>,
+    mut skinned_mesh_inverse_bindposes: ResMut<Assets<SkinnedMeshInverseBindposes>>,
+    names: Query<&Name>,
+) {
+    if *local != 80 {
+        *local += 1;
+        return;
+    }
+    *local += 1;
+    let hips = humanoid_bones.single().0.get(&BoneName::Hips).unwrap();
+
+    set_things(*hips, &mut query, &skinned_meshes, &mut skinned_mesh_inverse_bindposes, &names);
+    for child in children.iter_descendants(*hips) {
+        set_things(child,  &mut query, &skinned_meshes, &mut skinned_mesh_inverse_bindposes, &names);
+    }
+    event_writer.send(ReadyForNext);
+}
+
+fn set_things(
+    entity: Entity,
+    transforms: &mut Query<&mut Transform>,
+    skinned_meshes: &Query<&SkinnedMesh>,
+    skinned_mesh_inverse_bindposes: &mut Assets<SkinnedMeshInverseBindposes>,
+    names: &Query<&Name>
+) {
+    let one_eighty = Mat4::from_cols_slice(&[
+       -1.0, 0.0, 0.0, 0.0,
+        0.0, 1.0, 0.0, 0.0,
+        0.0, 0.0, -1.0, 0.0,
+        0.0, 0.0, 0.0, 1.0,
+    ]);
+    let t: Mat4 = transforms.get_mut(entity).unwrap().clone().compute_matrix();
+    *transforms.get_mut(entity).unwrap() = Transform::from_matrix(one_eighty * t * one_eighty);
+    if let Some(mut t2) = get_skinned_mesh(entity, skinned_meshes, skinned_mesh_inverse_bindposes) {
+        set_skinned_mesh_transform(entity, Transform::from_matrix(one_eighty * t2.compute_matrix() * one_eighty), skinned_meshes, skinned_mesh_inverse_bindposes);
+    }
+}
+
+fn flip_meshes(
+    mut meshes: ResMut<Assets<Mesh>>,
+    query: Query<&Handle<Mesh>>,
+    mut local: Local<i32>,
+    mut event_writer: EventWriter<ReadyForNext>,
+) {
+    if *local != 80 {
+        *local += 1;
+        return;
+    }
+    *local += 1;
+    for handle in query.iter() {
+        if let Some(mut mesh) = meshes.get_mut(handle) {
+            if let Some(VertexAttributeValues::Float32x3(ref mut positions)) = mesh.attribute_mut(Mesh::ATTRIBUTE_POSITION) {
+                for position in positions.iter_mut() {
+                    position[0] = -position[0];
+                    position[2] = -position[2];
+                }
+            }
+
+            if let Some(VertexAttributeValues::Float32x3(ref mut normals)) = mesh.attribute_mut(Mesh::ATTRIBUTE_NORMAL) {
+                for normal in normals.iter_mut() {
+                    normal[0] = -normal[0];
+                    normal[2] = -normal[2];
+                }
+            }
+
+            if let Some(VertexAttributeValues::Float32x4(ref mut tangents)) = mesh.attribute_mut(Mesh::ATTRIBUTE_TANGENT) {
+                for tangent in tangents.iter_mut() {
+                    tangent[0] = -tangent[0];
+                    tangent[2] = -tangent[2];
+                }
+            }
+        }
+    }
+    //event_writer.send(ReadyForNext);
+}
+
+fn set_skinned_mesh_transform(
+    entity: Entity,
+    new_transform: Transform,
+    skinned_meshes: &Query<&SkinnedMesh>,
+    skinned_mesh_inverse_bindposes: &mut Assets<SkinnedMeshInverseBindposes>,
+) {
+    for skinned_mesh in skinned_meshes.iter() {
+        let joints = &skinned_mesh.joints;
+        let inverse_bind_pose = skinned_mesh_inverse_bindposes
+            .get_mut(&skinned_mesh.inverse_bindposes)
+            .unwrap();
+        for (i, joint) in joints.iter().enumerate() {
+            if *joint == entity {
+                let mut temp = inverse_bind_pose.to_vec();
+                let t = temp.get(i).unwrap().clone();
+                // we inverse T because it's the inverse bindpose, we inverse delta worldspace because it's
+                // what we gotta offset it by?
+                let mut temp2 = Transform::from_matrix(t.inverse());
+                //temp2.rotation = new_transform.rotation;
+                temp2.translation = new_transform.translation;
+                *temp.get_mut(i).unwrap() = temp2.compute_matrix().inverse();
+                *inverse_bind_pose = SkinnedMeshInverseBindposes::from(temp);
+                //return;
+            }
+        }
+    }
+}
+
 
 fn retarget_entity(
     // this rotation should be in local space

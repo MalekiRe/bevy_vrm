@@ -26,211 +26,15 @@ impl Plugin for RenIkPlugin {
 #[derive(Component)]
 struct DrawableTarget;
 
-static mut PREVIOUS_BEST: f32 = 100000.0;
 
-fn update_test(world: &mut World) {
-
-    for _ in 0..300 {
-        let old_limb: Option<RenikLimb> = world.run_system_once_with((), |mut limb: Query<&mut RenikLimb>| {
-            let Ok(limb) = limb.get_single_mut() else { return None };
-            return Some(limb.clone());
-        });
-
-        let Some(old_limb) = old_limb else { return };
-
-        world.run_system_once_with(old_limb.clone(), |old_limb: In<RenikLimb>, mut limb: Query<&mut RenikLimb>,| {
-            let mut limb = limb.get_single_mut().unwrap();
-            //limb.a = Vec3::new(random!(-1.0..1.0), random!(-1.0..1.0), random!(-1.0..1.0)).normalize();
-            //limb.b = Vec3::new(random!(-1.0..1.0), random!(-1.0..1.0), random!(-1.0..1.0)).normalize();
-            //limb.c = Vec3::new(random!(-1.0..1.0), random!(-1.0..1.0), random!(-1.0..1.0)).normalize();
-            match (random!(10..14), random!(0..3)) {
-                /*(0, 0) => {
-                    let (x, y, z) = old_limb.pole_offset.to_euler(XYZ);
-                    limb.pole_offset = Quat::from_euler(XYZ, random!(0.0..360.0), y,z);
-                }
-                (0, 1) => {
-                    let (x, y, z) = old_limb.pole_offset.to_euler(XYZ);
-                    limb.pole_offset = Quat::from_euler(XYZ, x, random!(0.0..360.0), z);
-                }
-                (0, 2) => {
-                    let (x, y, z) = old_limb.pole_offset.to_euler(XYZ);
-                    limb.pole_offset = Quat::from_euler(XYZ, x, y, random!(0.0..360.0));
-                }
-                (1, _) => {
-                    limb.roll_offset = random!(-7.0..7.0);
-                }
-                (2, _) => {
-                    limb.lower_twist_offset = random!(-7.0..7.0);
-                }
-                (3, _) => {
-                    limb.upper_twist_offset = random!(-7.0..7.0);
-                }
-                (4, _) => {
-                    limb.twist_inflection_point_offset = random!(-7.0..7.0);
-                }
-                (5, _) => {
-                    limb.twist_overflow = random!(-7.0..7.0);
-                }
-                (6, _) => {
-                    limb.twist_overflow = random!(-7.0..7.0);
-                }
-                (7, _) => {
-                    limb.upper_limb_twist = random!(-7.0..7.0);
-                }
-                (8, _) => {
-                    limb.lower_limb_twist = random!(-7.0..7.0);
-                }*/
-                /*(9, 0) => {
-                    limb.target_position_influence = Vec3::new(random!(-5.0..5.0), limb.target_position_influence.y, limb.target_position_influence.z);
-                }
-                (9, 1) => {
-                    limb.target_position_influence = Vec3::new(limb.target_position_influence.x, random!(-5.0..5.0), limb.target_position_influence.z);
-                }
-                (9, 2) => {
-                    limb.target_position_influence = Vec3::new(limb.target_position_influence.x, limb.target_position_influence.y, random!(-5.0..5.0));
-                }*/
-                /*(10, 0) => {
-                    let (x, y, z) = old_limb.shoulder_pole_offset.to_euler(XYZ);
-                    limb.shoulder_pole_offset = Quat::from_euler(XYZ, random!(0.0..360.0), y,z);
-                }
-                (10, 1) => {
-                    let (x, y, z) = old_limb.shoulder_pole_offset.to_euler(XYZ);
-                    limb.shoulder_pole_offset = Quat::from_euler(XYZ, x, random!(0.0..360.0), z);
-                }
-                (10, 2) => {
-                    let (x, y, z) = old_limb.shoulder_pole_offset.to_euler(XYZ);
-                    limb.shoulder_pole_offset = Quat::from_euler(XYZ, x, y, random!(0.0..360.0));
-                }*/
-                (11, _) => {
-                    limb.a = match random!(0..6) {
-                        0 => Vec3::NEG_X,
-                        1 => Vec3::NEG_Y,
-                        2 => Vec3::NEG_Z,
-                        3 => Vec3::X,
-                        4 => Vec3::Y,
-                        5 => Vec3::Z,
-                        _ => Vec3::X,
-                    };
-                }
-                (12, _) => {
-                    limb.b = match random!(0..6) {
-                        0 => Vec3::NEG_X,
-                        1 => Vec3::NEG_Y,
-                        2 => Vec3::NEG_Z,
-                        3 => Vec3::X,
-                        4 => Vec3::Y,
-                        5 => Vec3::Z,
-                        _ => Vec3::X,
-                    };
-                }
-                (13, _) => {
-                    limb.c = match random!(0..6) {
-                        0 => Vec3::NEG_X,
-                        1 => Vec3::NEG_Y,
-                        2 => Vec3::NEG_Z,
-                        3 => Vec3::X,
-                        4 => Vec3::Y,
-                        5 => Vec3::Z,
-                        _ => Vec3::X,
-                    };
-                }
-                /*(11, 0) => {
-                    limb.a = Vec3::new(random!(-1.0..1.0), limb.a.y, limb.a.z).normalize();
-                }
-                (11, 1) => {
-                    limb.a = Vec3::new(limb.a.x, random!(-1.0..1.0), limb.a.z).normalize();
-                }
-                (11, 2) => {
-                    limb.a = Vec3::new(limb.a.x, limb.a.y, random!(-1.0..1.0)).normalize();
-                }
-                (12, 0) => {
-                    limb.b = Vec3::new(random!(-1.0..1.0), limb.b.y, limb.b.z).normalize();
-                }
-                (12, 1) => {
-                    limb.b = Vec3::new(limb.b.x, random!(-1.0..1.0), limb.b.z).normalize();
-                }
-                (12, 2) => {
-                    limb.b = Vec3::new(limb.b.x, limb.b.y, random!(-1.0..1.0)).normalize();
-                }
-                (13, 0) => {
-                    limb.c = Vec3::new(random!(-1.0..1.0), limb.c.y, limb.c.z).normalize();
-                }
-                (13, 1) => {
-                    limb.c = Vec3::new(limb.c.x, random!(-1.0..1.0), limb.c.z).normalize();
-                }
-                (13, 2) => {
-                    limb.c = Vec3::new(limb.c.x, limb.c.y, random!(-1.0..1.0)).normalize();
-                }*/
-                /*(14, 0) => {
-                    let (x, y, z) = old_limb.left_shoulder_offset.to_euler(XYZ);
-                    limb.left_shoulder_offset = Quat::from_euler(XYZ, random!(0.0..360.0), y,z);
-                }
-                (14, 1) => {
-                    let (x, y, z) = old_limb.left_shoulder_offset.to_euler(XYZ);
-                    limb.left_shoulder_offset = Quat::from_euler(XYZ, x, random!(0.0..360.0), z);
-                }
-                (14, 2) => {
-                    let (x, y, z) = old_limb.left_shoulder_offset.to_euler(XYZ);
-                    limb.left_shoulder_offset = Quat::from_euler(XYZ, x, y, random!(0.0..360.0));
-                }*/
-                _ => return,
-            }
-        });
-
-        let mut running_total = 0.0;
-
-        let ball_iterations = 25.0;
-
-        for _ in 0..ball_iterations as usize {
-            world.run_system_once(|mut ball: Query<&mut Transform, With<DrawableTarget>>| {
-                ball.get_single_mut().unwrap().translation = Vec3::new(random!(-2.0..2.0), random!(-2.0..2.0), random!(-2.0..2.0));
-            });
-            world.run_system_once(bevy::transform::systems::propagate_transforms);
-
-            world.run_system_once(perform_hand_left_ik);
-
-            world.run_system_once(bevy::transform::systems::propagate_transforms);
-
-            let distance: f32 = world.run_system_once_with((), |
-                mut query: Query<&RenikLimb>,
-                ball: Query<Entity, With<DrawableTarget>>,
-                query2: Query<&HumanoidBones>,
-                transforms: Query<&GlobalTransform>,
-            | -> f32 {
-                let q = query.get_single().unwrap();
-                let ball = ball.single();
-                let q2 = query2.single();
-                let Some(temp) = q2.0.get(&BoneName::LeftHand) else { return 1000.0; };
-                let Ok(hand_pos) = transforms.get(*temp) else { return 1000.0; };
-                let Ok(ball_pos) = transforms.get(ball) else { return 1000.0; };
-                hand_pos.translation().distance(ball_pos.translation())
-            });
-            running_total += distance;
-        }
-        running_total = running_total / ball_iterations;
-
-        if running_total < unsafe { PREVIOUS_BEST } {
-            unsafe { PREVIOUS_BEST = running_total};
-            world.run_system_once_with((), |mut limb: Query<&mut RenikLimb>| {
-                let limb = limb.get_single().unwrap();
-                println!("new best limb: {:#?}", limb);
-            });
-        } else {
-            world.run_system_once_with(old_limb.clone(), |old_limb: In<RenikLimb>, mut limb: Query<&mut RenikLimb>,| {
-                *limb.get_single_mut().unwrap() = old_limb.clone();
-            });
-        }
-    }
-}
-
-fn add_target(mut commands: Commands, skeletons: Query<(Entity, &HumanoidBones), Without<Target>>, mut meshes: ResMut<Assets<Mesh>>,
+fn add_target(mut commands: Commands, skeletons: Query<(Entity, &HumanoidBones), (Without<Target>, With<VrmRetargetingInitialized>)>, mut meshes: ResMut<Assets<Mesh>>,
               mut materials: ResMut<Assets<StandardMaterial>>,) {
     for (entity, _) in skeletons.iter() {
         let id = commands.spawn((
             PbrBundle {
                 mesh: meshes.add(Sphere::new(0.1)),
                 material: materials.add(Color::rgb(0.8, 0.8, 0.8)),
-                transform: Transform::from_scale(Vec3::splat(1.0)).with_translation(Vec3::new(-1.0, 0.0, -1.0)),
+                transform: Transform::from_scale(Vec3::splat(1.0)).with_translation(Vec3::new(1.0, 0.0, 1.0)),
                 ..Default::default()
             },
             bevy_mod_picking::PickableBundle::default(),
@@ -261,96 +65,7 @@ fn add_bone_rest(mut commands: Commands, query: Query<(Entity, &Transform), With
         }
     }
 }
-
-fn adjust_pole_offset(
-    mut query: Query<&mut RenikLimb>,
-    ball: Query<Entity, With<DrawableTarget>>,
-    mut local: Local<(RenikLimb, f32)>,
-    query2: Query<&HumanoidBones>,
-    transforms: Query<&GlobalTransform>,
-    mut locals: Query<&mut Transform>,
-) {
-    let Ok(mut q) = query.get_single_mut() else { return; };
-    let ball = ball.single();
-    let q2 = query2.single();
-    let Some(temp) = q2.0.get(&BoneName::LeftHand) else { return; };
-    let Ok(hand_pos) = transforms.get(*temp) else { return; };
-    let Ok(ball_pos) = transforms.get(ball) else { return; };
-
-    if local.1 == 0.0 {
-        local.1 = 1000.0;
-    }
-
-
-    if hand_pos.translation().distance(ball_pos.translation()) < local.1 {
-        local.0 = q.clone();
-        local.1 = hand_pos.translation().distance(ball_pos.translation());
-        println!("new best: {:#?}", q);
-    }
-
-    let (x, y, z) = q.pole_offset.to_euler(XYZ);
-
-
-
-    q.pole_offset = Quat::from_euler(XYZ, random!(0.0..360.0), random!(0.0..360.0),random!(0.0..360.0));
-    q.shoulder_pole_offset = Quat::from_euler(XYZ, random!(0.0..360.0), random!(0.0..360.0),random!(0.0..360.0));
-/*
-    match random!(0..1) {
-        0 => {
-            q.pole_offset = Quat::from_euler(XYZ, random!(0.0..360.0), random!(0.0..360.0),random!(0.0..360.0));
-        }
-        /*1 => {
-            q.roll_offset = random!(0.0..7.0);
-        }
-        2 => {
-            q.lower_twist_offset = random!(0.0..7.0);
-        }
-        3 => {
-            q.upper_twist_offset = random!(0.0..7.0);
-        }
-        4 => {
-            q.twist_inflection_point_offset = random!(0.0..7.0);
-        }
-        5 => {
-            q.twist_overflow = random!(0.0..7.0);
-        }
-        6 => {
-            q.twist_overflow = random!(0.0..7.0);
-        }
-        7 => {
-            q.upper_limb_twist = random!(0.0..7.0);
-        }
-        8 => {
-            q.lower_limb_twist = random!(0.0..7.0);
-        }
-        9 => {
-            q.target_position_influence = Vec3::new(random!(-5.0..5.0), random!(-5.0..5.0), random!(-5.0..5.0));
-        }*/
-        _ => return,
-    }*/
-
-    let mut selected = random!(0..3);
-    /*let mut new_ball_pos = match selected {
-        0 => Vec3::X,
-        1 => Vec3::Y,
-        2 => Vec3::Z,
-        _ => return,
-    };
-
-    if random!(0..1) == 1 {
-        new_ball_pos *= -1.0;
-    }*/
-
-    let new_ball_pos = Vec3::new(random!(-2.0..2.0), random!(-2.0..2.0), random!(-2.0..2.0)).normalize();
-
-    locals.get_mut(ball).unwrap().translation = new_ball_pos;
-}
-
 const LEFT_SHOULDER_OFFSET: Quat = Quat::IDENTITY;
-
-fn left_shoulder_pole_offset() -> Quat {
-    Quat::from_euler(EulerRot::XYZ, 0.0, 0.0, 78f32.to_radians())
-}
 
 const ARM_SHOULDER_INFLUENCE: f32 = 0.25;
 
@@ -371,20 +86,31 @@ mut local_transforms: Query<&mut Transform>) {
         let Some(left_upper_arm) = skeleton.0.get(&BoneName::LeftUpperArm) else { continue; };
         let left_upper_arm_parent = parents.get(*left_upper_arm).expect("missing parent of left upper arm").get();
 
-        let target = Transform::from_matrix(root_global_transform.compute_matrix().inverse() * global_transforms.get(target.left_hand).unwrap().compute_matrix());
+        let target = global_transforms.get(target.left_hand).unwrap().compute_transform();
 
-        let root = global_transforms.get(left_upper_arm_parent).unwrap().compute_transform();
+        let target = Transform::from_matrix(root_global_transform.compute_matrix().inverse() * target.compute_matrix());
 
+        //let target = Transform::from_matrix(root_global_transform.compute_matrix().inverse() * global_transforms.get(target.left_hand).unwrap().compute_matrix());
 
-        let root = global_transforms.get(left_upper_arm_parent).unwrap().compute_transform() * match bone_rests.get(left_upper_arm_parent) {
+        println!("target: {}", target.translation);
+
+        let root = Transform::from_translation(Vec3::new(0.0, 1.129, 0.006))
+            .with_rotation(Quat::from_xyzw(-0.027, 0.0, 0.0, 1.0))
+            .with_scale(Vec3::splat(1.0));
+
+        let mut root = root * match bone_rests.get(left_upper_arm_parent) {
             Ok(a) => a.0,
             Err(_) => { continue; },
         };
+
         //println!("origin: {}", root.translation);
         //println!("rotation: {:?}", root.rotation.to_euler(XYZ));
 
         let target_vector = root.compute_matrix().inverse().transform_point3(target.translation);
         //println!("target vector: {}", target_vector);
+
+
+
         let offset_quat = renik_limb.left_shoulder_offset;
         let pole_offset = renik_limb.shoulder_pole_offset.clone();
         //println!("a: {:?}, b: {:?}", offset_quat.to_euler(XYZ), pole_offset.to_euler(XYZ));
@@ -414,6 +140,10 @@ mut local_transforms: Query<&mut Transform>) {
 
         //println!("origin: {}", root.translation);
         //println!("rotation: {:?}", root.rotation.to_euler(XYZ));
+
+
+
+        //println!("{}", target.translation);
 
         do_ik_bullshit(renik_limb.clone(), root, target, &bone_rests, &skeleton, &mut local_transforms);
 
@@ -466,7 +196,7 @@ impl Default for RenikLimb {
                 0.0,
                 60.0_f32.to_radians()
             ),
-            shoulder_pole_offset: /*Quat::from_euler(XYZ, 0.0, 0.0, 78f32.to_radians())*/Quat::IDENTITY,
+            shoulder_pole_offset:/* Quat::from_euler(XYZ, 0.0, 0.0, 78f32.to_radians())*/ Quat::IDENTITY,
             a: Vec3::new(0.0, 1.0, 0.0),
             b: Vec3::new(1.0, 0.0, 0.0),
             target_position_influence: Vec3::new(2.0, -1.5, -1.0),
@@ -486,16 +216,18 @@ fn do_ik_bullshit(limb: RenikLimb, root: Transform, local_target: Transform, bon
     let local_target = Transform::from_matrix(true_root.compute_matrix().inverse() * local_target.compute_matrix());
 
 
-    let full_upper = bone_rests.get(*skeleton.0.get(&BoneName::LeftUpperArm).unwrap()).unwrap().0.clone();
-    let full_lower = bone_rests.get(*skeleton.0.get(&BoneName::LeftLowerArm).unwrap()).unwrap().0.clone();
-    let leaf = bone_rests.get(*skeleton.0.get(&BoneName::LeftHand).unwrap()).unwrap().0.clone();
-
+    let mut full_upper = bone_rests.get(*skeleton.0.get(&BoneName::LeftUpperArm).unwrap()).unwrap().0.clone();
+    let mut full_lower = bone_rests.get(*skeleton.0.get(&BoneName::LeftLowerArm).unwrap()).unwrap().0.clone();
+    let mut leaf = bone_rests.get(*skeleton.0.get(&BoneName::LeftHand).unwrap()).unwrap().0.clone();
 
     let upper_vector = full_lower.translation.clone();
     let lower_vector = leaf.translation.clone();
 
 
     let mut target_vector = local_target.translation;
+
+    //println!("{}", target_vector);
+
     let normalized_target_vector = target_vector.normalize();
 
     let limb_length = upper_vector.length() + lower_vector.length();
@@ -503,11 +235,16 @@ fn do_ik_bullshit(limb: RenikLimb, root: Transform, local_target: Transform, bon
         target_vector = normalized_target_vector * limb_length;
     }
 
+    //println!("{}", target_vector);
+
     let angles = trig_angles(upper_vector, lower_vector, target_vector);
 
+    //println!("{}", angles);
 
     let starting_pole = limb.pole_offset * /*Vec3::new(0.0, 1.0, 0.0)*/ limb.a;
     let mut joint_axis = align_vectors(starting_pole, target_vector, 1.0) * (limb.pole_offset * /*Vec3::new(1.0, 0.0, 0.0)*/ limb.b);
+
+    //println!("{}", starting_pole);
 
     //println!("{}", joint_axis);
 

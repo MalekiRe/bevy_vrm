@@ -10,7 +10,7 @@ use bevy_egui::EguiPlugin;
 use bevy_mod_picking::DefaultPickingPlugins;
 use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
 use bevy_transform_gizmo::TransformGizmoPlugin;
-use bevy_vrm::ik::RenikLimb;
+use bevy_vrm::ik::{RenikLimb, RenIkPlugin};
 use bevy_vrm::retargeting::VrmRetargetingPlugin;
 use bevy_vrm::{loader::Vrm, mtoon::MtoonSun, SpringBones, VrmBundle, VrmPlugin};
 
@@ -36,7 +36,8 @@ impl Plugin for VrmViewerPlugin {
                 bevy_inspector_egui::DefaultInspectorConfigPlugin,
                 PanOrbitCameraPlugin,
                 VrmPlugin,
-                /* RenIkPlugin, */ DefaultPickingPlugins,
+                RenIkPlugin,
+                DefaultPickingPlugins,
                 TransformGizmoPlugin::default(),
             ))
             .add_systems(Startup, setup)
