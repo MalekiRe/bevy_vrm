@@ -152,17 +152,21 @@ fn set_things(
 }
 
 fn flip_meshes(
+    humanoid_bones: Query<Entity, With<HumanoidBones>>,
     mut meshes: ResMut<Assets<Mesh>>,
     query: Query<&Handle<Mesh>>,
     mut local: Local<i32>,
     mut event_writer: EventWriter<ReadyForNext>,
+    children: Query<&Children>,
 ) {
     if *local != 80 {
         *local += 1;
         return;
     }
     *local += 1;
-    for handle in query.iter() {
+
+    for child in children.iter_descendants(humanoid_bones.single()) {
+        let Ok(handle) = query.get(child) else { continue };
         if let Some(mut mesh) = meshes.get_mut(handle) {
             if let Some(VertexAttributeValues::Float32x3(ref mut positions)) = mesh.attribute_mut(Mesh::ATTRIBUTE_POSITION) {
                 for position in positions.iter_mut() {
@@ -186,7 +190,6 @@ fn flip_meshes(
             }
         }
     }
-    //event_writer.send(ReadyForNext);
 }
 
 fn set_skinned_mesh_transform(

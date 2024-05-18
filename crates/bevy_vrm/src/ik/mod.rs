@@ -34,7 +34,7 @@ fn add_target(mut commands: Commands, skeletons: Query<(Entity, &HumanoidBones),
             PbrBundle {
                 mesh: meshes.add(Sphere::new(0.1)),
                 material: materials.add(Color::rgb(0.8, 0.8, 0.8)),
-                transform: Transform::from_scale(Vec3::splat(1.0)).with_translation(Vec3::new(1.0, 0.0, 1.0)),
+                transform: Transform::from_scale(Vec3::splat(1.0)).with_translation(Vec3::new(0.136, 1.015, 0.056)),
                 ..Default::default()
             },
             bevy_mod_picking::PickableBundle::default(),
@@ -88,14 +88,19 @@ mut local_transforms: Query<&mut Transform>) {
 
         let target = global_transforms.get(target.left_hand).unwrap().compute_transform();
 
+        //println!("{}", root_global_transform.translation());
+        //println!("{}", root_global_transform.to_scale_rotation_translation().1);
+        //println!("{}", target.translation);
+        //println!("{}", target.rotation);
+
         let target = Transform::from_matrix(root_global_transform.compute_matrix().inverse() * target.compute_matrix());
 
         //let target = Transform::from_matrix(root_global_transform.compute_matrix().inverse() * global_transforms.get(target.left_hand).unwrap().compute_matrix());
 
-        println!("target: {}", target.translation);
+        //println!("target: {}", target.translation);
 
-        let root = Transform::from_translation(Vec3::new(0.0, 1.129, 0.006))
-            .with_rotation(Quat::from_xyzw(-0.027, 0.0, 0.0, 1.0))
+        let root = Transform::from_translation(Vec3::new(0.0, 1.129259, 0.006192))
+            .with_rotation(Quat::from_euler(XYZ, -0.054638, 0.0, 0.0))
             .with_scale(Vec3::splat(1.0));
 
         let mut root = root * match bone_rests.get(left_upper_arm_parent) {
@@ -213,12 +218,14 @@ fn do_ik_bullshit(limb: RenikLimb, root: Transform, local_target: Transform, bon
 
     let true_root = root * Transform::from_translation(bone_rests.get(*skeleton.0.get(&BoneName::LeftUpperArm).unwrap()).unwrap().0.translation);
 
+    //println!("{}, {}", local_target.rotation, local_target.translation);
+
     let local_target = Transform::from_matrix(true_root.compute_matrix().inverse() * local_target.compute_matrix());
 
 
-    let mut full_upper = bone_rests.get(*skeleton.0.get(&BoneName::LeftUpperArm).unwrap()).unwrap().0.clone();
-    let mut full_lower = bone_rests.get(*skeleton.0.get(&BoneName::LeftLowerArm).unwrap()).unwrap().0.clone();
-    let mut leaf = bone_rests.get(*skeleton.0.get(&BoneName::LeftHand).unwrap()).unwrap().0.clone();
+    let mut full_upper = Transform::from_translation(bone_rests.get(*skeleton.0.get(&BoneName::LeftUpperArm).unwrap()).unwrap().0.clone().translation);
+    let mut full_lower = Transform::from_translation(bone_rests.get(*skeleton.0.get(&BoneName::LeftLowerArm).unwrap()).unwrap().0.clone().translation);
+    let mut leaf = Transform::from_translation(bone_rests.get(*skeleton.0.get(&BoneName::LeftHand).unwrap()).unwrap().0.clone().translation);
 
     let upper_vector = full_lower.translation.clone();
     let lower_vector = leaf.translation.clone();
@@ -228,7 +235,9 @@ fn do_ik_bullshit(limb: RenikLimb, root: Transform, local_target: Transform, bon
 
     //println!("{}", target_vector);
 
-    let normalized_target_vector = target_vector.normalize();
+    let mut normalized_target_vector = target_vector.normalize();
+    //TODO remove this
+    //normalized_target_vector = Vec3::new(0.213173, 0.518952, -0.827796);
 
     let limb_length = upper_vector.length() + lower_vector.length();
     if target_vector.length() > upper_vector.length() + lower_vector.length() {
@@ -237,14 +246,16 @@ fn do_ik_bullshit(limb: RenikLimb, root: Transform, local_target: Transform, bon
 
     //println!("{}", target_vector);
 
-    let angles = trig_angles(upper_vector, lower_vector, target_vector);
+    let mut angles = trig_angles(upper_vector, lower_vector, target_vector);
 
     //println!("{}", angles);
 
     let starting_pole = limb.pole_offset * /*Vec3::new(0.0, 1.0, 0.0)*/ limb.a;
-    let mut joint_axis = align_vectors(starting_pole, target_vector, 1.0) * (limb.pole_offset * /*Vec3::new(1.0, 0.0, 0.0)*/ limb.b);
+    let mut joint_axis = align_vectors(starting_pole, target_vector, 1.0) * (limb.pole_offset * Vec3::new(1.0, 0.0, 0.0));
 
     //println!("{}", starting_pole);
+
+    //joint_axis = Vec3::new(0.741801, 0.465429, 0.482809);
 
     //println!("{}", joint_axis);
 
@@ -254,7 +265,7 @@ fn do_ik_bullshit(limb: RenikLimb, root: Transform, local_target: Transform, bon
 
 
     //println!("{}", joint_axis);
-    let local_leaf_vector = local_target.rotation * (/*Vec3::new(0.0, 1.0, 0.0)*/ limb.c);
+    let local_leaf_vector = local_target.rotation * Vec3::new(0.0, 1.0, 0.0);
     let local_lower_vector = Quat::from_axis_angle(joint_axis, angles.x - angles.y).mul_vec3(normalized_target_vector).normalize();
 
 
@@ -263,13 +274,15 @@ fn do_ik_bullshit(limb: RenikLimb, root: Transform, local_target: Transform, bon
 
 
 
-    let mut joint_roll_amount = if lower_rejection.length() == 0.0001 { leaf_rejection.angle_between(lower_rejection) } else { 0.0 } * limb.target_rotation_influence;
+    let mut joint_roll_amount = leaf_rejection.angle_between(lower_rejection) * limb.target_rotation_influence;
     joint_roll_amount *= local_leaf_vector.cross(local_lower_vector).dot(normalized_target_vector).abs();
 
 
     if leaf_rejection.cross(lower_rejection).dot(normalized_target_vector) > 0.0 {
         joint_roll_amount *= -1.0;
     }
+
+    //println!("{}", joint_roll_amount);
 
     joint_axis = Quat::from_axis_angle(normalized_target_vector, joint_roll_amount).mul_vec3(joint_axis);
 
@@ -322,16 +335,30 @@ fn do_ik_bullshit(limb: RenikLimb, root: Transform, local_target: Transform, bon
     joint_axis = Quat::from_axis_angle(normalized_target_vector, twist_angle * limb.target_rotation_influence).mul_vec3(joint_axis);
     // Rebuild the rotations
 
+    //joint_axis = Vec3::new(0.017751, 0.845073, 0.534354);
+    //normalized_target_vector = Vec3::new(0.213173, 0.518952, -0.827796);
+    //angles.x = 0.94497638940811;
+    //angles.y = 1.8366014957428;
+    //println!("{}", angles.y);
+    //println!("{}", angles.x);
+
     //println!("{}", joint_axis);
+    //println!("{}", normalized_target_vector);
+
 
     let upper_joint_vector = Quat::from_axis_angle(joint_axis, angles.x).mul_vec3(normalized_target_vector);
-    let rolled_lower_joint_axis = Quat::from_axis_angle(Vec3::new(0.0, 1.0, 0.0), -limb.roll_offset).mul_vec3(Vec3::new(1.0, 0.0, 0.0));
+    let a = Quat::from_axis_angle(Vec3::new(0.0, 1.0, 0.0), -limb.roll_offset);
+
+
+    let rolled_lower_joint_axis = a * Vec3::new(1.0, 0.0, 0.0);
     //println!("{}", rolled_lower_joint_axis);
     let lower_joint_vector = Quat::from_axis_angle(rolled_lower_joint_axis, angles.y).mul_vec3(Vec3::new(0.0, 1.0, 0.0));
     let twisted_joint_axis = Quat::from_axis_angle(upper_joint_vector, upper_twist).mul_vec3(joint_axis);
     let upper_basis = Quat::from_mat3(&Mat3::from_cols(twisted_joint_axis, upper_joint_vector, twisted_joint_axis.cross(upper_joint_vector)));
     //println!("{:?}", lower_joint_vector);
     let mut lower_basis = Quat::from_mat3(&Mat3::from_cols(rolled_lower_joint_axis, lower_joint_vector, rolled_lower_joint_axis.cross(lower_joint_vector)));
+
+    //println!("{}", lower_joint_vector);
 
     //println!("{:?}", lower_basis.to_euler(XYZ));
 
@@ -345,18 +372,20 @@ fn do_ik_bullshit(limb: RenikLimb, root: Transform, local_target: Transform, bon
 
     //println!("{:?}", upper_twist);
 
-    lower_basis = lower_basis * Quat::from_axis_angle(Vec3::new(0.0, 1.0, 0.0), -upper_twist);
+    lower_basis = Quat::from_axis_angle(Vec3::new(0.0, 1.0, 0.0), -upper_twist) * lower_basis;
 
     //rotate_quat(lower_basis, Vec3::new(0.0, 1.0, 0.0), -upper_twist);
     //println!("{:?}", lower_basis.to_euler(XYZ));
+
+    //println!("{:?}", full_lower.rotation);
 
     let upper_transform = (full_upper.rotation.inverse() * upper_basis).normalize();
     let lower_transform = (full_lower.rotation.inverse() * lower_basis).normalize();
     let leaf_transform = (leaf.rotation.inverse() * (upper_basis * lower_basis).inverse() * local_target.rotation * leaf.rotation);
 
-    /*println!("upper transform: {:?}", upper_transform.to_euler(XYZ));
-    println!("lower transform: {:?}", lower_transform.to_euler(XYZ));
-    println!("leaf_transform: {:?}", leaf_transform.to_euler(XYZ));*/
+    //println!("upper transform: {:?}", upper_transform.to_euler(XYZ));
+    //println!("lower transform: {:?}", lower_transform.to_euler(XYZ));
+    //println!("leaf_transform: {:?}", leaf_transform.to_euler(XYZ));
 
     local_transforms.get_mut(*skeleton.0.get(&BoneName::LeftUpperArm).unwrap()).unwrap().rotation = upper_transform;
     local_transforms.get_mut(*skeleton.0.get(&BoneName::LeftLowerArm).unwrap()).unwrap().rotation = lower_transform;
