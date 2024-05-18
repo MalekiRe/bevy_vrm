@@ -4,8 +4,8 @@ use gltf_kun::graph::{
     ByteNode, Extensions, Weight,
 };
 
-use crate::{loader::Vrm, SpringBone, SpringBones};
 use crate::retargeting::VrmRetargetingInitialized;
+use crate::{loader::Vrm, SpringBone, SpringBones};
 
 #[derive(Component)]
 pub struct SpringBonesInitialized;
@@ -14,8 +14,10 @@ pub fn set_spring_bones(
     mut commands: Commands,
     mut vrm: Query<
         (Entity, &mut SpringBones, &Handle<Vrm>, &SceneInstance),
-        (Without<SpringBonesInitialized>,
-        With<VrmRetargetingInitialized>,)
+        (
+            Without<SpringBonesInitialized>,
+            With<VrmRetargetingInitialized>,
+        ),
     >,
     names: Query<(Entity, &Name)>,
     scene_manager: Res<SceneSpawner>,
