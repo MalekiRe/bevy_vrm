@@ -278,17 +278,17 @@ fn retarget_entity(
     this_transform.rotation = new_rot;
     // correct the positions of all of the child entities
     for child in children.iter_descendants(entity) {
-        let that_bind =
-            get_skinned_mesh(child, skinned_meshes, skinned_mesh_inverse_bindposes).unwrap();
-        set_skinned_mesh(
-            child,
-            (that_bind.rotation * comp_rot).normalize(),
-            skinned_meshes,
-            skinned_mesh_inverse_bindposes,
-        );
-        // fix translations
-        let mut that_transform = local_transforms.get_mut(child).unwrap();
-        that_transform.translation = comp_rot.inverse() * that_transform.translation;
+        if let Some(that_bind) = get_skinned_mesh(child, skinned_meshes, skinned_mesh_inverse_bindposes) {
+            set_skinned_mesh(
+                child,
+                (that_bind.rotation * comp_rot).normalize(),
+                skinned_meshes,
+                skinned_mesh_inverse_bindposes,
+            );
+            // fix translations
+            let mut that_transform = local_transforms.get_mut(child).unwrap();
+            that_transform.translation = comp_rot.inverse() * that_transform.translation;
+        }
     }
 }
 
@@ -334,7 +334,7 @@ fn set_skinned_mesh(
                 temp2.rotation = new_rot;
                 *temp.get_mut(i).unwrap() = temp2.compute_matrix().inverse();
                 *inverse_bind_pose = SkinnedMeshInverseBindposes::from(temp);
-                return;
+                //return;
             }
         }
     }
