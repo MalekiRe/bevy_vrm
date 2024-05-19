@@ -278,7 +278,9 @@ fn retarget_entity(
     this_transform.rotation = new_rot;
     // correct the positions of all of the child entities
     for child in children.iter_descendants(entity) {
-        if let Some(that_bind) = get_skinned_mesh(child, skinned_meshes, skinned_mesh_inverse_bindposes) {
+        if let Some(that_bind) =
+            get_skinned_mesh(child, skinned_meshes, skinned_mesh_inverse_bindposes)
+        {
             set_skinned_mesh(
                 child,
                 (that_bind.rotation * comp_rot).normalize(),
