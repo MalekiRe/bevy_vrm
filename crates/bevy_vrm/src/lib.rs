@@ -56,5 +56,8 @@ impl Plugin for VrmPlugin {
 pub struct VrmBundle {
     pub auto_scene: AutoScene,
     pub scene_bundle: SceneBundle,
-    pub vrm: Handle<Vrm>,
+    pub vrm: VrmHandle,
 }
+
+#[derive(Component, Default)]
+pub struct VrmHandle(pub Handle<Vrm>);

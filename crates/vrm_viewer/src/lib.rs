@@ -5,12 +5,7 @@ use std::f32::consts::PI;
 use bevy::{asset::AssetMetaCheck, prelude::*, render::view::RenderLayers};
 use bevy_egui::EguiPlugin;
 use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
-use bevy_vrm::{
-    first_person::{FirstPersonFlag, SetupFirstPerson, RENDER_LAYERS},
-    loader::Vrm,
-    mtoon::MtoonSun,
-    VrmBundle, VrmPlugins,
-};
+use bevy_vrm::{first_person::{FirstPersonFlag, SetupFirstPerson, RENDER_LAYERS}, loader::Vrm, mtoon::MtoonSun, VrmBundle, VrmHandle, VrmPlugins};
 use ui::RenderLayer;
 
 mod draw_spring_bones;
@@ -118,11 +113,11 @@ fn set_render_layers(
 fn setup_first_person(
     mut events: EventReader<AssetEvent<Vrm>>,
     mut writer: EventWriter<SetupFirstPerson>,
-    vrms: Query<(Entity, &Handle<Vrm>)>,
+    vrms: Query<(Entity, &VrmHandle)>,
 ) {
     for event in events.read() {
         if let AssetEvent::LoadedWithDependencies { id } = event {
-            let (ent, _) = vrms.iter().find(|(_, handle)| handle.id() == *id).unwrap();
+            let (ent, _) = vrms.iter().find(|(_, handle)| handle.0.id() == *id).unwrap();
             writer.send(SetupFirstPerson(ent));
         }
     }
@@ -132,7 +127,7 @@ fn load_model(
     asset_server: Res<AssetServer>,
     mut commands: Commands,
     mut prev: Local<String>,
-    mut vrms: Query<Entity, With<Handle<Vrm>>>,
+    mut vrms: Query<Entity, With<VrmHandle>>,
     settings: Res<Settings>,
 ) {
     if prev.as_str() == settings.model.as_str() {
@@ -151,7 +146,7 @@ fn load_model(
             transform,
             ..default()
         },
-        vrm: asset_server.load(settings.model.clone()),
+        vrm: VrmHandle(asset_server.load(settings.model.clone())),
         ..default()
     });
 

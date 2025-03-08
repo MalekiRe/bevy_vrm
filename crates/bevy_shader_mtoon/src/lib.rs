@@ -4,7 +4,8 @@ use bevy::{asset::load_internal_asset, prelude::*};
 
 mod shader;
 
-use bevy_mod_outline::{OutlineBundle, OutlinePlugin, OutlineVolume};
+use bevy_mod_outline::{OutlinePlugin, OutlineVolume};
+use bevy_mod_outline::bundles::OutlineBundle;
 pub use shader::{MtoonMaterial, OutlineMode};
 
 const SHADER_HANDLE: Handle<Shader> = Handle::weak_from_u128(0x2d86c40a175b);
@@ -24,7 +25,7 @@ impl Plugin for MtoonPlugin {
 
 #[derive(Bundle, Clone, Default)]
 pub struct MtoonBundle {
-    pub mtoon: Handle<MtoonMaterial>,
+    pub mtoon: MeshMaterial3d<MtoonMaterial>,
     pub outline_sync: OutlineSync,
 }
 
@@ -56,7 +57,7 @@ fn add_outline(
     mut entities: Query<Entity, (Without<OutlineVolume>, With<OutlineSync>)>,
 ) {
     for entity in entities.iter_mut() {
-        commands.entity(entity).insert(OutlineBundle::default());
+        //commands.entity(entity).insert(OutlineBundle::default());
     }
 }
 
@@ -64,7 +65,7 @@ fn sync_outline(
     cameras: Query<&GlobalTransform, With<Camera>>,
     materials: Res<Assets<MtoonMaterial>>,
     mut entities: Query<
-        (&mut OutlineVolume, &Handle<MtoonMaterial>, &GlobalTransform),
+        (&mut OutlineVolume, &MeshMaterial3d<MtoonMaterial>, &GlobalTransform),
         With<OutlineSync>,
     >,
     windows: Query<&Window>,

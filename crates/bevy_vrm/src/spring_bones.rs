@@ -85,12 +85,12 @@ fn do_springbone_logic(
                 let inertia = (spring_bone_logic_state.current_tail
                     - spring_bone_logic_state.prev_tail)
                     * (1.0 - spring_bone.drag_force);
-                let stiffness = time.delta_seconds()
+                let stiffness = time.delta_secs()
                     * (parent_world_rotation
                         * spring_bone_logic_state.bone_axis
                         * spring_bone.stiffness);
                 let external =
-                    time.delta_seconds() * spring_bone.gravity_dir * spring_bone.gravity_power;
+                    time.delta_secs() * spring_bone.gravity_dir * spring_bone.gravity_power;
 
                 let mut next_tail =
                     spring_bone_logic_state.current_tail + inertia + stiffness + external;

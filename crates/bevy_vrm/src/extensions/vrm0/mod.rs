@@ -86,8 +86,8 @@ pub fn import_primitive_material(
                     .get_label_handle::<MtoonMaterial>(&label);
 
                 entity
-                    .remove::<Handle<StandardMaterial>>()
-                    .insert((handle, OutlineSync));
+                    .remove::<MeshMaterial3d<StandardMaterial>>()
+                    .insert((MeshMaterial3d(handle), OutlineSync));
             }
             Some(other) => {
                 warn!("Unsupported shader: {:?}", other);

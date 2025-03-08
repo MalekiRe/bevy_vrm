@@ -38,7 +38,7 @@ impl ExtensionImport<GltfDocument, GltfFormat> for VrmExtensions {
         format: &mut GltfFormat,
         doc: &GltfDocument,
     ) -> Result<(), Box<dyn std::error::Error>> {
-        Vrm::import(graph, format, doc)?;
+        Vrm::import(graph, format, doc).unwrap();
 
         Ok(())
     }
@@ -118,8 +118,8 @@ impl BevyExtensionImport<GltfDocument> for VrmExtensions {
     fn import_root(_context: &mut ImportContext) {}
 
     fn import_scene(context: &mut ImportContext, _scene: Scene, world: &mut World) {
-        world.run_system_once(sync_simple_transforms);
-        world.run_system_once(propagate_transforms);
+        world.run_system_once(sync_simple_transforms).unwrap();
+        world.run_system_once(propagate_transforms).unwrap();
 
         let graph = &context.graph;
 
@@ -129,7 +129,7 @@ impl BevyExtensionImport<GltfDocument> for VrmExtensions {
                     .iter()
                     .map(|(a, b)| (a, b.clone()))
                     .collect::<Vec<_>>()
-            });
+            }).unwrap();
 
         let Some(ext) = get_vrm_extension(graph) else {
             warn!("VRM extension not found");
@@ -196,7 +196,7 @@ impl BevyExtensionImport<GltfDocument> for VrmExtensions {
                     .entity(query.single())
                     .insert(SpringBones(spring_bones));
             },
-        );
+        ).unwrap();
 
         world.run_system_once(
             |mut spring_boness: Query<&mut SpringBones>, children: Query<&Children>| {
@@ -213,9 +213,9 @@ impl BevyExtensionImport<GltfDocument> for VrmExtensions {
                     }
                 }
             },
-        );
+        ).unwrap();
 
-        world.run_system_once(add_springbone_logic_state);
+        world.run_system_once(add_springbone_logic_state).unwrap();
 
         for bone in ext.human_bones(graph) {
             let node = match bone.node(graph) {
@@ -287,7 +287,7 @@ impl BevyExtensionImport<GltfDocument> for VrmExtensions {
                         bone_name,
                     ));
                 },
-            );
+            ).unwrap();
         }
     }
 }
@@ -310,11 +310,11 @@ fn get_vrm_extension(graph: &Graph) -> Option<Vrm> {
     let doc_idx = graph.node_indices().find(|n| {
         let weight = graph.node_weight(*n);
         matches!(weight, Some(Weight::Gltf(GltfWeight::Document)))
-    })?;
+    }).unwrap();
 
     let doc = GltfDocument(doc_idx);
 
-    let ext = doc.get_extension::<Vrm>(graph)?;
+    let ext = doc.get_extension::<Vrm>(graph).unwrap();
 
     Some(ext)
 }

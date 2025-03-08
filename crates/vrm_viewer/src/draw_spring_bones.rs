@@ -24,8 +24,9 @@ pub fn draw_spring_bones(
                 };
 
                 gizmos.sphere(
+                    Isometry3d::new(
                     transform.translation(),
-                    Quat::default(),
+                    Quat::default(),),
                     spring_bone.hit_radius + 0.01,
                     Color::linear_rgb(spring_bone.stiffness, 1.0 - spring_bone.stiffness, 0.1),
                 );
@@ -42,9 +43,9 @@ pub(crate) fn move_avatar(
     if !settings.move_avatar {
         return;
     }
-    let move_speed = (time.elapsed_seconds() + 1.0) / 10.0;
+    let move_speed = (time.elapsed_secs() + 1.0) / 10.0;
     for mut t in query.iter_mut() {
-        let a = time.elapsed_seconds() * move_speed;
+        let a = time.elapsed_secs() * move_speed;
         let b = a.sin();
         t.rotation.x = b / 20.0;
         t.translation.x += b / 70.0;

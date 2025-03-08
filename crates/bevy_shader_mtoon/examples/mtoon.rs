@@ -62,23 +62,23 @@ fn setup(
     ));
 
     let mtoon_textured = MtoonBundle {
-        mtoon: mtoon_materials.add(MtoonMaterial {
+        mtoon: MeshMaterial3d(mtoon_materials.add(MtoonMaterial {
             base_color_texture: Some(images.add(uv_debug_texture())),
             outline_width: 0.002,
             outline_mode: OutlineMode::Screen,
             ..default()
-        }),
+        })),
         ..default()
     };
 
     let mtoon_plain = MtoonBundle {
-        mtoon: mtoon_materials.add(MtoonMaterial {
+        mtoon: MeshMaterial3d(mtoon_materials.add(MtoonMaterial {
             base_color: BISQUE.into(),
             shade_factor: SALMON.into(),
             outline_width: 0.2,
             outline_mode: OutlineMode::World,
             ..default()
-        }),
+        })),
         ..default()
     };
 
@@ -98,7 +98,7 @@ fn setup(
     for (i, mesh) in shapes.into_iter().enumerate() {
         // Texture
         commands.spawn((
-            mesh.clone(),
+            Mesh3d(mesh.clone()),
             mtoon_textured.clone(),
             SpatialBundle {
                 transform: Transform::from_xyz(
@@ -113,7 +113,7 @@ fn setup(
 
         // Without texture
         commands.spawn((
-            mesh,
+            Mesh3d(mesh),
             mtoon_plain.clone(),
             SpatialBundle {
                 transform: Transform::from_xyz(
@@ -129,7 +129,7 @@ fn setup(
 
     // Big shape to test shadows.
     commands.spawn((
-        meshes.add(Torus::default()),
+        Mesh3d(meshes.add(Torus::default())),
         mtoon_textured.clone(),
         SpatialBundle {
             transform: Transform::from_xyz(0.0, 5.0, 0.0).with_scale(Vec3::splat(4.25)),
@@ -139,8 +139,8 @@ fn setup(
 
     // Ground
     commands.spawn(PbrBundle {
-        material: materials.add(StandardMaterial::default()),
-        mesh: meshes.add(Plane3d::default()),
+        material: MeshMaterial3d(materials.add(StandardMaterial::default())),
+        mesh: Mesh3d(meshes.add(Plane3d::default())),
         transform: Transform::from_scale(Vec3::splat(30.0)),
         ..default()
     });

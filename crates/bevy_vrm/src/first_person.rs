@@ -47,10 +47,10 @@ pub(crate) fn handle_setup_events(
     mut flags: Query<(
         Entity,
         &mut FirstPersonFlag,
-        &Handle<Mesh>,
+        &Mesh3d,
         Option<&Name>,
-        Option<&Handle<StandardMaterial>>,
-        Option<&Handle<MtoonMaterial>>,
+        Option<&MeshMaterial3d<StandardMaterial>>,
+        Option<&MeshMaterial3d<MtoonMaterial>>,
         Option<&MeshMorphWeights>,
     )>,
     mut commands: Commands,
@@ -135,7 +135,7 @@ pub(crate) fn handle_setup_events(
                 let new_ent = commands
                     .spawn((
                         SpatialBundle::default(),
-                        new_mesh_handle,
+                        Mesh3d(new_mesh_handle),
                         RENDER_LAYERS[&FirstPersonFlag::FirstPersonOnly].clone(),
                     ))
                     .id();
